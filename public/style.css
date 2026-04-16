@@ -1,0 +1,380 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: #080810;
+  color: #f0f0f0;
+  font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Fixed 1920x440 display, scaled to fit viewport via JS */
+#display {
+  width: 1920px;
+  height: 440px;
+  background: #080810;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Top bar */
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 30px;
+  background: #0c0c18;
+  border-bottom: 1px solid #1a1a2e;
+  flex-shrink: 0;
+}
+
+#location {
+  font-size: 22px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #c0c0d0;
+}
+
+#status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  color: #a0a0b0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+#live-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #22cc44;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+#live-dot.stale {
+  background: #cc4422;
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+#clock {
+  font-size: 24px;
+  font-weight: bold;
+  color: #e0e0f0;
+  letter-spacing: 2px;
+}
+
+/* Radar background canvas */
+#radar {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  width: 1920px;
+  height: 356px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Main card — fills height between bars */
+#card {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  padding: 0;
+  min-height: 0;
+  background: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+/* Left zone — airline logo */
+#zone-left {
+  flex: 0 0 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding-left: 24px;
+}
+
+#airline-logo {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #12122a;
+  padding: 10px;
+}
+
+#airline-logo.hidden {
+  display: none;
+}
+
+#airline-code {
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: bold;
+  color: #8888aa;
+  letter-spacing: 3px;
+  border: 2px solid #2a2a44;
+  border-radius: 8px;
+  background: #12122a;
+}
+
+#airline-code.hidden {
+  display: none;
+}
+
+/* Center zone — two rows */
+#zone-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  padding: 0 40px;
+  min-width: 0;
+}
+
+#center-top {
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+}
+
+#callsign {
+  font-size: 120px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 6px;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+  line-height: 1;
+}
+
+#aircraft-type {
+  font-size: 36px;
+  color: #9999bb;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+#route {
+  font-size: 38px;
+  font-weight: bold;
+  color: #cc99ff;
+  letter-spacing: 3px;
+  line-height: 1;
+  min-height: 38px;
+}
+
+#center-bottom {
+  display: flex;
+  align-items: center;
+  gap: 36px;
+}
+
+#altitude {
+  font-size: 56px;
+  font-weight: bold;
+  color: #ffbb33;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+#vrate-badge {
+  font-size: 26px;
+  font-weight: bold;
+  padding: 6px 18px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+  line-height: 1.2;
+}
+
+#vrate-badge.climbing {
+  background: #114422;
+  color: #44ee66;
+  border: 2px solid #22aa44;
+}
+
+#vrate-badge.descending {
+  background: #441111;
+  color: #ee4444;
+  border: 2px solid #aa2222;
+}
+
+#vrate-badge.level {
+  background: #222233;
+  color: #999999;
+  border: 2px solid #444455;
+}
+
+#speed {
+  font-size: 36px;
+  color: #e0e0f0;
+  line-height: 1;
+}
+
+#distance {
+  font-size: 36px;
+  color: #66ccff;
+  line-height: 1;
+  letter-spacing: 1px;
+}
+
+#last-seen {
+  font-size: 24px;
+  color: #8888aa;
+  line-height: 1;
+}
+
+/* Right zone — compass */
+#zone-right {
+  flex: 0 0 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 20px;
+}
+
+#compass-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+#compass {
+  width: 300px;
+  height: 300px;
+}
+
+#heading-readout {
+  font-size: 28px;
+  font-weight: bold;
+  color: #e0e0f0;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+/* Bottom bar */
+#bottombar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  padding: 0 30px;
+  background: #0c0c18;
+  border-top: 1px solid #1a1a2e;
+  flex-shrink: 0;
+}
+
+#aircraft-count {
+  font-size: 20px;
+  color: #a0a0b0;
+}
+
+#pager-dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  max-width: 60%;
+  overflow: hidden;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #333355;
+  flex-shrink: 0;
+}
+
+.dot.active {
+  background: #6688ff;
+  box-shadow: 0 0 8px #4466dd;
+}
+
+#countdown {
+  font-size: 20px;
+  color: #8888aa;
+}
+
+/* App toggle strip */
+#toggle-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  background: #06060e;
+  border-top: 1px solid #141428;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: #555570;
+  cursor: pointer;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+#toggle-strip:active {
+  color: #8888bb;
+  background: #0a0a1a;
+}
+
+/* No flights overlay */
+#no-flights {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  right: 0;
+  bottom: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 52px;
+  color: #667788;
+  letter-spacing: 4px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+#no-flights.hidden {
+  display: none;
+}
+
+/* Entry animations */
+.anim-entry {
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.anim-entry.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

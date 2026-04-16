@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlightBoard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="display">
+    <!-- Top bar -->
+    <div id="topbar">
+      <div id="location">Arvada CO</div>
+      <div id="status"><span id="live-dot"></span> <span id="status-text">LIVE</span></div>
+      <div id="clock"></div>
+    </div>
+
+    <!-- Radar background -->
+    <canvas id="radar"></canvas>
+
+    <!-- Main card area -->
+    <div id="card">
+      <!-- Left zone: airline logo -->
+      <div id="zone-left">
+        <img id="airline-logo" src="" alt="">
+        <div id="airline-code" class="hidden"></div>
+      </div>
+
+      <!-- Center zone: flight data -->
+      <div id="zone-center">
+        <div id="center-top">
+          <div id="callsign"></div>
+          <div id="aircraft-type"></div>
+        </div>
+        <div id="route"></div>
+        <div id="center-bottom">
+          <div id="altitude"></div>
+          <div id="vrate-badge"></div>
+          <div id="speed"></div>
+          <div id="distance"></div>
+          <div id="last-seen"></div>
+        </div>
+      </div>
+
+      <!-- Right zone: compass rose -->
+      <div id="zone-right">
+        <div id="compass-stack">
+          <canvas id="compass" width="300" height="300"></canvas>
+          <div id="heading-readout"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div id="bottombar">
+      <div id="aircraft-count"></div>
+      <div id="pager-dots"></div>
+      <div id="countdown"></div>
+    </div>
+
+    <!-- No flights overlay -->
+    <div id="no-flights" class="hidden">
+      <div>No aircraft overhead</div>
+    </div>
+
+    <!-- App toggle strip -->
+    <div id="toggle-strip" onclick="location.href='http://localhost:3002'">
+      SATELLITES &rarr;
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
