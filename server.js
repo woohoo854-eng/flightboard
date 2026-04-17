@@ -174,6 +174,26 @@ let accessToken = null;
 let tokenExpiry = 0;
 let flightData = { time: 0, states: [] };
 
+let dailyStats = {
+  dateKey: null,
+  uniqueAircraft: new Set(),
+  highestAltitude: { value: 0, callsign: null, icao24: null },
+  closestApproach: { value: Infinity, callsign: null, icao24: null },
+  hourlyBuckets: {},
+  airlineTally: {},
+};
+
+function getLocalDateKey() {
+  const now = new Date();
+  const d = new Date(now.toLocaleString('en-US', { timeZone: 'America/Denver' }));
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function getLocalHour() {
+  const now = new Date();
+  return new Date(now.toLocaleString('en-US', { timeZone: 'America/Denver' })).getHours();
+}
+
 async function getToken() {
   const now = Date.now();
   if (accessToken && now < tokenExpiry - 30000) {
@@ -279,6 +299,43 @@ async function pollOpenSky() {
         states: states.slice(0, MAX_FLIGHTS)
       };
       console.log(`Poll: ${states.length} airborne, showing ${flightData.states.length} closest`);
+
+      // Update daily stats
+      const today = getLocalDateKey();
+      if (dailyStats.dateKey !== today) {
+        dailyStats = {
+          dateKey: today,
+          uniqueAircraft: new Set(),
+          highestAltitude: { value: 0, callsign: null, icao24: null },
+          closestApproach: { value: Infinity, callsign: null, icao24: null },
+          hourlyBuckets: {},
+          airlineTally: {},
+        };
+      }
+      const hour = String(getLocalHour()).padStart(2, '0');
+      if (!dailyStats.hourlyBuckets[hour]) dailyStats.hourlyBuckets[hour] = new Set();
+
+      for (const s of states) {
+        const distMi = haversineDistanceMi(HOME_LAT, HOME_LON, s.latitude, s.longitude);
+        if (distMi > 10) continue;
+        const altFt = metersToFeet(s.baroAltitude != null ? s.baroAltitude : s.geoAltitude) || 0;
+
+        const isNew = !dailyStats.uniqueAircraft.has(s.icao24);
+        dailyStats.uniqueAircraft.add(s.icao24);
+
+        if (altFt > dailyStats.highestAltitude.value) {
+          dailyStats.highestAltitude = { value: altFt, callsign: s.callsign || null, icao24: s.icao24 };
+        }
+        if (distMi < dailyStats.closestApproach.value) {
+          dailyStats.closestApproach = { value: distMi, callsign: s.callsign || null, icao24: s.icao24 };
+        }
+        dailyStats.hourlyBuckets[hour].add(s.icao24);
+
+        if (isNew && s.airlineIcao) {
+          dailyStats.airlineTally[s.airlineIcao] =
+            (dailyStats.airlineTally[s.airlineIcao] || 0) + 1;
+        }
+      }
     } else {
       flightData = { time: now, states: [] };
       console.log('Poll: no states returned');
@@ -428,7 +485,8 @@ app.get('/api/aircraft', (req, res) => {
         airlineIata: s.airlineIata || null,
         airlineName: s.airlineName || null,
         notable: notableInfo.notable,
-        notableReason: notableInfo.notableReason
+        notableReason: notableInfo.notableReason,
+        lastSeen: s.lastSeen || null
       };
     })
     .filter(Boolean)
@@ -442,6 +500,44 @@ app.get('/api/aircraft', (req, res) => {
     timestamp: now,
     featured: aircraft.length > 0 ? aircraft[0].icao24 : null,
     aircraft
+  });
+});
+
+app.get('/api/stats', (req, res) => {
+  const count = dailyStats.uniqueAircraft.size;
+
+  const highestAltitude = dailyStats.highestAltitude.value > 0
+    ? { feet: new Intl.NumberFormat('en-US').format(dailyStats.highestAltitude.value),
+        callsign: dailyStats.highestAltitude.callsign || '—' }
+    : { feet: '—', callsign: '—' };
+
+  const closestApproach = dailyStats.closestApproach.value < Infinity
+    ? { miles: dailyStats.closestApproach.value.toFixed(1),
+        callsign: dailyStats.closestApproach.callsign || '—' }
+    : { miles: '—', callsign: '—' };
+
+  let busiestHour = { hour: '—', count: 0 };
+  for (const [h, set] of Object.entries(dailyStats.hourlyBuckets)) {
+    if (set.size > busiestHour.count) {
+      busiestHour = { hour: `${h}:00`, count: set.size };
+    }
+  }
+
+  let topAirline = { icao: '—', name: '—', count: 0 };
+  for (const [icao, cnt] of Object.entries(dailyStats.airlineTally)) {
+    if (cnt > topAirline.count) {
+      const airline = airlineMap[icao];
+      topAirline = { icao, name: airline?.name || icao, count: cnt };
+    }
+  }
+
+  res.json({
+    dateKey: dailyStats.dateKey || getLocalDateKey(),
+    uniqueAircraftCount: count,
+    highestAltitude,
+    closestApproach,
+    busiestHour,
+    topAirline,
   });
 });
 

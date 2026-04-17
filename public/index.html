@@ -3,73 +3,104 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <base href="./">
   <title>FlightBoard</title>
   <link rel="stylesheet" href="style.css">
+  <script defer src="app.js"></script>
 </head>
 <body>
-  <div id="display">
-    <!-- Top bar -->
-    <div id="topbar">
-      <div id="location">Arvada CO</div>
-      <div id="status"><span id="live-dot"></span> <span id="status-text">LIVE</span></div>
-      <div id="clock"></div>
+  <div id="dashboard">
+    <div id="topbar" aria-label="Top bar">
+      <span class="topbar-left">Arvada CO</span>
+      <span class="topbar-center">
+        <span id="live-dot"></span>
+        <span class="topbar-live-label">LIVE</span>
+        <span class="topbar-sep"> · </span>
+        <span id="aircraft-count">— aircraft in range</span>
+      </span>
+      <span class="topbar-right"><span id="clock"></span> MDT</span>
     </div>
-
-    <!-- Radar background -->
-    <canvas id="radar"></canvas>
-
-    <!-- Main card area -->
-    <div id="card">
-      <!-- Left zone: airline logo -->
-      <div id="zone-left">
-        <img id="airline-logo" src="" alt="">
-        <div id="airline-code" class="hidden"></div>
-      </div>
-
-      <!-- Center zone: flight data -->
-      <div id="zone-center">
-        <div id="center-top">
-          <div id="callsign"></div>
-          <div id="aircraft-type"></div>
+    <div id="featured-panel" aria-label="Featured flight">
+      <div id="feat-flight">
+        <div class="feat-logo-wrap">
+          <img id="feat-logo" class="feat-logo hidden" alt="Airline logo">
+          <span id="feat-logo-fallback" class="feat-logo-fallback hidden"></span>
         </div>
-        <div id="route"></div>
-        <div id="center-bottom">
-          <div id="altitude"></div>
-          <div id="vrate-badge"></div>
-          <div id="speed"></div>
-          <div id="distance"></div>
-          <div id="last-seen"></div>
+        <div id="feat-callsign" class="feat-callsign"></div>
+        <div id="feat-route" class="feat-route"></div>
+        <div class="feat-divider"></div>
+        <div class="feat-stats">
+          <div class="stat-cell">
+            <div class="stat-label">ALT</div>
+            <div id="feat-alt" class="stat-value"></div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">SPD</div>
+            <div id="feat-spd" class="stat-value"></div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">DIST</div>
+            <div id="feat-dist" class="stat-value"></div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">TYPE</div>
+            <div id="feat-type" class="stat-value stat-type"></div>
+          </div>
+        </div>
+        <div id="feat-caption" class="feat-caption"></div>
+      </div>
+      <div id="feat-empty" class="feat-empty hidden">
+        <div class="feat-empty-title">ARVADA, CO</div>
+        <div class="feat-empty-coords">39.80°N 105.09°W · Elev 5,351 ft</div>
+      </div>
+    </div>
+    <div id="radar-panel" aria-label="Radar display">
+      <canvas id="radar" aria-label="Radar canvas"></canvas>
+    </div>
+    <div id="compass-panel" aria-label="Compass and stats">
+      <div id="compass-top">
+        <svg id="compass-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="200" cy="200" r="190" fill="none" stroke="var(--border-accent)" stroke-width="1"/>
+          <g id="compass-ticks"></g>
+          <g id="compass-needle" style="opacity:0">
+            <path d="M 200 20 L 210 200 L 190 200 Z" fill="var(--accent-amber)"/>
+          </g>
+          <circle cx="200" cy="200" r="12" fill="var(--bg-panel)" stroke="var(--accent-amber)" stroke-width="2"/>
+        </svg>
+        <div class="compass-readout">
+          <span class="compass-lbl">HDG</span>
+          <span id="compass-value" class="compass-value">—</span>
+          <span id="compass-cardinal" class="compass-cardinal"></span>
         </div>
       </div>
-
-      <!-- Right zone: compass rose -->
-      <div id="zone-right">
-        <div id="compass-stack">
-          <canvas id="compass" width="300" height="300"></canvas>
-          <div id="heading-readout"></div>
+      <hr class="panel-divider">
+      <div id="stats-bottom">
+        <div class="stat-row">
+          <span class="stat-label">AIRCRAFT TODAY</span>
+          <span class="stat-val" id="stat-count">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">HIGHEST</span>
+          <span class="stat-val" id="stat-highest">—</span>
+          <span class="stat-sub" id="stat-highest-sub"></span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">CLOSEST</span>
+          <span class="stat-val" id="stat-closest">—</span>
+          <span class="stat-sub" id="stat-closest-sub"></span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">BUSIEST HOUR</span>
+          <span class="stat-val" id="stat-busiest">—</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">TOP AIRLINE</span>
+          <span class="stat-val" id="stat-airline">—</span>
+          <span class="stat-sub" id="stat-airline-sub"></span>
         </div>
       </div>
     </div>
-
-    <!-- Bottom bar -->
-    <div id="bottombar">
-      <div id="aircraft-count"></div>
-      <div id="pager-dots"></div>
-      <div id="countdown"></div>
-    </div>
-
-    <!-- No flights overlay -->
-    <div id="no-flights" class="hidden">
-      <div>No aircraft overhead</div>
-    </div>
-
-    <!-- App toggle strip -->
-    <div id="toggle-strip" onclick="location.href='http://localhost:3002'">
-      SATELLITES &rarr;
-    </div>
-
+    <div id="ticker" aria-label="Notable flight ticker"></div>
   </div>
-
-  <script src="app.js"></script>
 </body>
 </html>

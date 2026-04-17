@@ -1,698 +1,720 @@
-// FlightBoard frontend
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('[flightboard] startup');
 
-const typeNames = {
-  A19N: 'Airbus A319neo', A20N: 'Airbus A320neo', A21N: 'Airbus A321neo',
-  A225: 'Antonov An-225', A306: 'Airbus A300-600', A30B: 'Airbus A300',
-  A310: 'Airbus A310', A318: 'Airbus A318', A319: 'Airbus A319',
-  A320: 'Airbus A320', A321: 'Airbus A321', A332: 'Airbus A330-200',
-  A333: 'Airbus A330-300', A338: 'Airbus A330-800neo', A339: 'Airbus A330-900neo',
-  A342: 'Airbus A340-200', A343: 'Airbus A340-300', A345: 'Airbus A340-500',
-  A346: 'Airbus A340-600', A359: 'Airbus A350-900', A35K: 'Airbus A350-1000',
-  A388: 'Airbus A380', B37M: 'Boeing 737 MAX 7', B38M: 'Boeing 737 MAX 8',
-  B39M: 'Boeing 737 MAX 9', B3XM: 'Boeing 737 MAX 10',
-  B712: 'Boeing 717', B721: 'Boeing 727-100', B722: 'Boeing 727-200',
-  B731: 'Boeing 737-100', B732: 'Boeing 737-200', B733: 'Boeing 737-300',
-  B734: 'Boeing 737-400', B735: 'Boeing 737-500', B736: 'Boeing 737-600',
-  B737: 'Boeing 737-700', B738: 'Boeing 737-800', B739: 'Boeing 737-900',
-  B741: 'Boeing 747-100', B742: 'Boeing 747-200', B743: 'Boeing 747-300',
-  B744: 'Boeing 747-400', B748: 'Boeing 747-8', B74S: 'Boeing 747SP',
-  B752: 'Boeing 757-200', B753: 'Boeing 757-300',
-  B762: 'Boeing 767-200', B763: 'Boeing 767-300', B764: 'Boeing 767-400',
-  B772: 'Boeing 777-200', B77L: 'Boeing 777-200LR', B77W: 'Boeing 777-300ER',
-  B778: 'Boeing 777-8', B779: 'Boeing 777-9',
-  B788: 'Boeing 787-8', B789: 'Boeing 787-9', B78X: 'Boeing 787-10',
-  BCS1: 'Airbus A220-100', BCS3: 'Airbus A220-300',
-  C130: 'Lockheed C-130', C17: 'Boeing C-17',
-  C172: 'Cessna 172', C182: 'Cessna 182', C206: 'Cessna 206', C208: 'Cessna 208 Caravan',
-  C25A: 'Cessna CJ2', C25B: 'Cessna CJ3', C25C: 'Cessna CJ4',
-  C510: 'Cessna Mustang', C525: 'Cessna CitationJet', C550: 'Cessna Citation II',
-  C560: 'Cessna Citation V', C56X: 'Cessna Citation Excel', C680: 'Cessna Sovereign',
-  C68A: 'Cessna Latitude', C700: 'Cessna Longitude', C72R: 'Cessna 172RG',
-  CL30: 'Bombardier Challenger 300', CL35: 'Bombardier Challenger 350',
-  CL60: 'Bombardier Challenger 600', CRJ2: 'Bombardier CRJ-200',
-  CRJ7: 'Bombardier CRJ-700', CRJ9: 'Bombardier CRJ-900',
-  CRJX: 'Bombardier CRJ-1000',
-  DA40: 'Diamond DA40', DA42: 'Diamond DA42', DA62: 'Diamond DA62',
-  DC10: 'McDonnell Douglas DC-10', DHC6: 'Viking Twin Otter',
-  DH8A: 'Dash 8-100', DH8B: 'Dash 8-200', DH8C: 'Dash 8-300', DH8D: 'Dash 8-400',
-  E135: 'Embraer ERJ-135', E145: 'Embraer ERJ-145',
-  E170: 'Embraer E170', E175: 'Embraer E175',
-  E190: 'Embraer E190', E195: 'Embraer E195',
-  E75L: 'Embraer E175', E75S: 'Embraer E175',
-  E290: 'Embraer E190-E2', E295: 'Embraer E195-E2',
-  F2TH: 'Dassault Falcon 2000', F900: 'Dassault Falcon 900',
-  FA7X: 'Dassault Falcon 7X', FA8X: 'Dassault Falcon 8X',
-  G280: 'Gulfstream G280', G550: 'Gulfstream G550',
-  G650: 'Gulfstream G650', GL5T: 'Bombardier Global 5000',
-  GL7T: 'Bombardier Global 7500', GLEX: 'Bombardier Global Express',
-  GLF4: 'Gulfstream G-IV', GLF5: 'Gulfstream G-V', GLF6: 'Gulfstream G650',
-  H25B: 'Hawker 800', H25C: 'Hawker 1000',
-  LJ35: 'Learjet 35', LJ45: 'Learjet 45', LJ60: 'Learjet 60', LJ75: 'Learjet 75',
-  MD11: 'McDonnell Douglas MD-11', MD82: 'McDonnell Douglas MD-82',
-  MD83: 'McDonnell Douglas MD-83', MD88: 'McDonnell Douglas MD-88',
-  P28A: 'Piper Cherokee', PA18: 'Piper Super Cub', PA28: 'Piper Cherokee',
-  PA32: 'Piper Saratoga', PA34: 'Piper Seneca', PA44: 'Piper Seminole',
-  PA46: 'Piper Malibu', PC12: 'Pilatus PC-12', PC24: 'Pilatus PC-24',
-  RV7: 'Van\'s RV-7', RV8: 'Van\'s RV-8', RV10: 'Van\'s RV-10',
-  SF50: 'Cirrus Vision Jet', SR20: 'Cirrus SR20', SR22: 'Cirrus SR22',
-  SU95: 'Sukhoi Superjet 100', SW4: 'Swearingen Metroliner',
-  TBM7: 'Daher TBM 700', TBM8: 'Daher TBM 850', TBM9: 'Daher TBM 900',
-  '737-8': 'Boeing 737-800', BE35: 'Beechcraft Bonanza', BE36: 'Beechcraft Bonanza',
-  BE40: 'Beechcraft Beechjet', BE55: 'Beechcraft Baron', BE58: 'Beechcraft Baron',
-  BE9L: 'Beechcraft King Air 90', BE20: 'Beechcraft King Air 200',
-  B350: 'Beechcraft King Air 350',
-};
+  // Color constants — match CSS variables exactly
+  const BG_PANEL_ALT   = '#161820';
+  const ACCENT_AMBER   = '#ffb347';
+  const ACCENT_CYAN    = '#5fd3e0';
+  const TEXT_DIM       = '#555962';
+  const TEXT_SECONDARY = '#8a8f98';
 
-// --- 16-point compass direction ---
-const COMPASS_POINTS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
-function compassDirection(deg) {
-  const idx = Math.round(((deg % 360) + 360) % 360 / 22.5) % 16;
-  return COMPASS_POINTS[idx];
-}
+  // ── DOM refs: top bar ──────────────────────────────────────────────────────
+  const clockEl = document.getElementById('clock');
+  const countEl = document.getElementById('aircraft-count');
 
-// --- Haversine distance (miles) and bearing from home ---
-const HOME_LAT = 39.8028;
-const HOME_LON = -105.0875;
+  // ── DOM refs: featured panel ───────────────────────────────────────────────
+  const featFlight   = document.getElementById('feat-flight');
+  const featEmpty    = document.getElementById('feat-empty');
+  const featLogo     = document.getElementById('feat-logo');
+  const featLogoFb   = document.getElementById('feat-logo-fallback');
+  const featCallsign = document.getElementById('feat-callsign');
+  const featRoute    = document.getElementById('feat-route');
+  const featAlt      = document.getElementById('feat-alt');
+  const featSpd      = document.getElementById('feat-spd');
+  const featDist     = document.getElementById('feat-dist');
+  const featType     = document.getElementById('feat-type');
+  const featCaption  = document.getElementById('feat-caption');
 
-function haversineDistance(lat1, lon1, lat2, lon2) {
-  const R = 3958.8; // Earth radius in miles
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
+  // ── DOM refs: ticker + dashboard ──────────────────────────────────────────
+  const dashboardEl = document.getElementById('dashboard');
+  const tickerEl    = document.getElementById('ticker');
 
-function bearingFrom(lat1, lon1, lat2, lon2) {
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const r1 = lat1 * Math.PI / 180;
-  const r2 = lat2 * Math.PI / 180;
-  const y = Math.sin(dLon) * Math.cos(r2);
-  const x = Math.cos(r1) * Math.sin(r2) - Math.sin(r1) * Math.cos(r2) * Math.cos(dLon);
-  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
-}
+  // ── DOM refs: stats panel ─────────────────────────────────────────────────
+  const statCount      = document.getElementById('stat-count');
+  const statHighest    = document.getElementById('stat-highest');
+  const statHighestSub = document.getElementById('stat-highest-sub');
+  const statClosest    = document.getElementById('stat-closest');
+  const statClosestSub = document.getElementById('stat-closest-sub');
+  const statBusiest    = document.getElementById('stat-busiest');
+  const statAirline    = document.getElementById('stat-airline');
+  const statAirlineSub = document.getElementById('stat-airline-sub');
 
-// --- Route lookup cache (adsbdb) ---
-// Values: null = lookup in progress, { origin, destination } = found, false = no route
-const routeCache = {};
-let routeCacheHits = 0;
-let routeCacheMisses = 0;
+  // ── DOM refs: compass ─────────────────────────────────────────────────────
+  const compassNeedle   = document.getElementById('compass-needle');
+  const compassTicks    = document.getElementById('compass-ticks');
+  const compassValue    = document.getElementById('compass-value');
+  const compassCardinal = document.getElementById('compass-cardinal');
 
-function lookupRoute(callsign) {
-  if (callsign in routeCache) {
-    routeCacheHits++;
-    console.log(`[route] cache hit: ${callsign} (hits=${routeCacheHits} misses=${routeCacheMisses})`);
-    return;
-  }
-  routeCacheMisses++;
-  console.log(`[route] cache miss, fetching: ${callsign} (hits=${routeCacheHits} misses=${routeCacheMisses})`);
-  routeCache[callsign] = null; // mark in-progress
-  fetch(`https://api.adsbdb.com/v0/callsign/${encodeURIComponent(callsign)}`)
-    .then(res => res.json())
-    .then(data => {
-      const fr = data && data.response && data.response.flightroute;
-      if (fr && fr.origin && fr.destination) {
-        routeCache[callsign] = {
-          origin: fr.origin.iata_code || fr.origin.icao_code || '',
-          originCity: fr.origin.municipality || '',
-          destination: fr.destination.iata_code || fr.destination.icao_code || '',
-          destinationCity: fr.destination.municipality || ''
-        };
-        console.log(`[route] found: ${callsign} → ${routeCache[callsign].origin} → ${routeCache[callsign].destination}`);
-      } else {
-        routeCache[callsign] = false;
-        console.log(`[route] no route: ${callsign}`);
-      }
-      // Refresh display if this callsign is still showing
-      if (flights.length > 0 && flights[currentIndex] && flights[currentIndex].callsign === callsign) {
-        updateRouteDisplay(callsign);
-      }
-    })
-    .catch(err => {
-      routeCache[callsign] = false;
-      console.log(`[route] error for ${callsign}: ${err.message}`);
-    });
-}
+  // ── DOM refs: radar ────────────────────────────────────────────────────────
+  const radarPanel  = document.getElementById('radar-panel');
+  const radarCanvas = document.getElementById('radar');
+  const radarCtx    = radarCanvas.getContext('2d');
+  const RADAR_PAD   = 32;
 
-function updateRouteDisplay(callsign) {
-  const route = routeCache[callsign];
-  if (route && route.origin && route.destination) {
-    els.route.textContent = `${route.origin} → ${route.destination}`;
-  } else {
-    els.route.textContent = '';
-  }
-}
+  // ── Radar: projection constants ────────────────────────────────────────────
+  const ARVADA_LAT     = 39.8028;
+  const ARVADA_LON     = -105.0875;
+  const RANGE_MI       = 10;
+  const MI_PER_DEG_LAT = 69.0;
+  const MI_PER_DEG_LON = 69.0 * Math.cos(ARVADA_LAT * Math.PI / 180);
 
-// --- Viewport scaling: fit 1920x440 into any browser window ---
-function scaleDisplay() {
-  const display = document.getElementById('display');
-  const scaleX = window.innerWidth / 1920;
-  const scaleY = window.innerHeight / 440;
-  const scale = Math.min(scaleX, scaleY);
-  display.style.transform = `scale(${scale})`;
-  display.style.left = ((window.innerWidth - 1920 * scale) / 2) + 'px';
-  display.style.top = ((window.innerHeight - 440 * scale) / 2) + 'px';
-}
-scaleDisplay();
-window.addEventListener('resize', scaleDisplay);
-
-let flights = [];
-let currentIndex = 0;
-let countdownSeconds = 12;
-let currentHeading = null;
-let animatingHeading = null;
-let animationFrame = null;
-
-// DOM refs
-const els = {
-  clock: document.getElementById('clock'),
-  liveDot: document.getElementById('live-dot'),
-  statusText: document.getElementById('status-text'),
-  callsign: document.getElementById('callsign'),
-  aircraftType: document.getElementById('aircraft-type'),
-  vrateBadge: document.getElementById('vrate-badge'),
-  altitude: document.getElementById('altitude'),
-  route: document.getElementById('route'),
-  speed: document.getElementById('speed'),
-  distance: document.getElementById('distance'),
-  lastSeen: document.getElementById('last-seen'),
-  airlineLogo: document.getElementById('airline-logo'),
-  airlineCode: document.getElementById('airline-code'),
-  compass: document.getElementById('compass'),
-  headingReadout: document.getElementById('heading-readout'),
-  aircraftCount: document.getElementById('aircraft-count'),
-  pagerDots: document.getElementById('pager-dots'),
-  countdown: document.getElementById('countdown'),
-  card: document.getElementById('card'),
-  noFlights: document.getElementById('no-flights'),
-  radar: document.getElementById('radar')
-};
-
-// --- Radar sweep ---
-const RADAR_W = 1920;
-const RADAR_H = 356;
-const RADAR_CX = 1400;  // origin: center-right area
-const RADAR_CY = RADAR_H / 2;
-const RADAR_R = 400;    // sweep radius
-const ARVADA_LAT = 39.8028;
-const ARVADA_LON = -105.0875;
-const BBOX_LAT_HALF = (40.014 - 39.591) / 2;  // 0.2115 degrees
-const BBOX_LON_HALF = (-104.826 - (-105.326)) / 2;  // 0.25 degrees
-
-let radarAngle = 0;
-let aircraftDotX = null;
-let aircraftDotY = null;
-let dotPulseAlpha = 0;
-
-// Set canvas backing size
-els.radar.width = RADAR_W;
-els.radar.height = RADAR_H;
-
-function calcAircraftDot(lat, lon) {
-  if (lat == null || lon == null) {
-    aircraftDotX = null;
-    aircraftDotY = null;
-    return;
-  }
-  // Offset from Arvada center, normalized to bounding box half-span
-  const dx = (lon - ARVADA_LON) / BBOX_LON_HALF;
-  const dy = -(lat - ARVADA_LAT) / BBOX_LAT_HALF;  // negative: north is up
-  // Map to radar canvas centered on RADAR_CX, RADAR_CY
-  aircraftDotX = RADAR_CX + dx * RADAR_R * 0.8;
-  aircraftDotY = RADAR_CY + dy * RADAR_R * 0.8;
-}
-
-function drawRadar() {
-  const ctx = els.radar.getContext('2d');
-  ctx.clearRect(0, 0, RADAR_W, RADAR_H);
-
-  // Subtle range rings
-  ctx.globalAlpha = 0.04;
-  ctx.strokeStyle = '#4466aa';
-  ctx.lineWidth = 1;
-  for (let i = 1; i <= 3; i++) {
-    ctx.beginPath();
-    ctx.arc(RADAR_CX, RADAR_CY, (RADAR_R / 3) * i, 0, Math.PI * 2);
-    ctx.stroke();
+  function project(lat, lon, size) {
+    const dxMi   = (lon - ARVADA_LON) * MI_PER_DEG_LON;
+    const dyMi   = (lat - ARVADA_LAT) * MI_PER_DEG_LAT;
+    const pxPerMi = (size / 2) / RANGE_MI;
+    return {
+      x: size / 2 + dxMi * pxPerMi,
+      y: size / 2 - dyMi * pxPerMi,  // flip y: north is up
+    };
   }
 
-  // Sweep line
-  const rad = radarAngle * Math.PI / 180;
-  const sweepX = RADAR_CX + Math.cos(rad) * RADAR_R;
-  const sweepY = RADAR_CY + Math.sin(rad) * RADAR_R;
+  // ── Radar: plane icon rasterization ───────────────────────────────────────
+  // Path is 20×20 units, scaled 1.8× to ~36px; offscreen canvas is 56×56 so
+  // rotation never clips the wingtips. Visual center of plane (x=10, y=9 in
+  // path coords) is translated to canvas center so drawImage centering works.
+  const PLANE_PATH  = 'M 10 1 L 11 9 L 18 12 L 18 13.5 L 11 12 L 11 15.5 L 13.5 17 L 13.5 18 L 10 17.5 L 6.5 18 L 6.5 17 L 9 15.5 L 9 12 L 2 13.5 L 2 12 L 9 9 Z';
+  const PATH_SCALE  = 1.8;   // 20-unit path → ~36px
+  const ICON_SIZE   = 56;    // offscreen canvas side length
+  // Distance from canvas center to the tail's bottom edge in display pixels
+  // tail at path-y=18 → canvas-y = (28 - 9*1.8) + 18*1.8 = 12 + 32.4 = 44.4, offset from center = 16.4
+  const ICON_TAIL_OFFSET = 17;
 
-  // Sweep trail gradient (wedge-shaped fade)
-  ctx.globalAlpha = 1;
-  const trailAngle = 30; // degrees of trail
-  for (let i = 0; i < trailAngle; i++) {
-    const a = (radarAngle - i) * Math.PI / 180;
-    const alpha = 0.12 * (1 - i / trailAngle);
-    ctx.beginPath();
-    ctx.moveTo(RADAR_CX, RADAR_CY);
-    ctx.lineTo(RADAR_CX + Math.cos(a) * RADAR_R, RADAR_CY + Math.sin(a) * RADAR_R);
-    ctx.strokeStyle = `rgba(0, 255, 204, ${alpha})`;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+  function createPlaneIcon(color, outlineColor) {
+    const off = document.createElement('canvas');
+    off.width = off.height = ICON_SIZE;
+    const ctx = off.getContext('2d');
+    // Place path visual center (10, 9) at canvas center (28, 28)
+    ctx.translate(
+      ICON_SIZE / 2 - 10 * PATH_SCALE,
+      ICON_SIZE / 2 -  9 * PATH_SCALE
+    );
+    ctx.scale(PATH_SCALE, PATH_SCALE);
+    const path = new Path2D(PLANE_PATH);
+    ctx.fillStyle   = color;
+    ctx.strokeStyle = outlineColor;
+    ctx.lineWidth   = 1 / PATH_SCALE;  // 1px in canvas pixels
+    ctx.fill(path);
+    ctx.stroke(path);
+    return off;
   }
 
-  // Main sweep line
-  ctx.beginPath();
-  ctx.moveTo(RADAR_CX, RADAR_CY);
-  ctx.lineTo(sweepX, sweepY);
-  ctx.strokeStyle = 'rgba(0, 255, 204, 0.15)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+  const iconCyan  = createPlaneIcon(ACCENT_CYAN,  BG_PANEL_ALT);
+  const iconAmber = createPlaneIcon(ACCENT_AMBER, BG_PANEL_ALT);
 
-  // Center dot
-  ctx.globalAlpha = 0.08;
-  ctx.beginPath();
-  ctx.arc(RADAR_CX, RADAR_CY, 3, 0, Math.PI * 2);
-  ctx.fillStyle = '#4488ff';
-  ctx.fill();
+  // ── Radar: live aircraft state (updated each poll) ─────────────────────────
+  let radarAircraft   = [];
+  let radarFeaturedId = null;
 
-  // Aircraft dot
-  if (aircraftDotX != null && aircraftDotY != null) {
-    // Check if sweep is near the dot
-    const dotAngle = Math.atan2(aircraftDotY - RADAR_CY, aircraftDotX - RADAR_CX) * 180 / Math.PI;
-    let angleDiff = ((radarAngle - dotAngle) % 360 + 360) % 360;
-    if (angleDiff > 180) angleDiff = 360 - angleDiff;
+  // ── Radar: position trail history ──────────────────────────────────────────
+  // Map<icao24, [{lat, lon, timestamp}]> — max 5 entries, oldest first
+  const trailMap = new Map();
 
-    if (angleDiff < 8) {
-      dotPulseAlpha = 1.0;
+  // ── Radar: sweep animation state ───────────────────────────────────────────
+  let sweepAngle     = 0;
+  const SWEEP_PERIOD = 6000; // ms for full 360°
+
+  // ── Compass: helpers + init ────────────────────────────────────────────────
+  function headingToCardinal(deg) {
+    const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE',
+                  'S','SSW','SW','WSW','W','WNW','NW','NNW'];
+    return dirs[Math.round(deg / 22.5) % 16];
+  }
+
+  function initCompass() {
+    const NS  = 'http://www.w3.org/2000/svg';
+    const cx = 200, cy = 200, outerR = 190;
+    const majorAngles = { 0:'N', 90:'E', 180:'S', 270:'W' };
+    const interAngles  = { 45:'NE', 135:'SE', 225:'SW', 315:'NW' };
+    const skipAngles   = new Set([0, 45, 90, 135, 180, 225, 270, 315]);
+
+    function pt(r, angle) {
+      const rad = angle * Math.PI / 180;
+      return [cx + r * Math.sin(rad), cy - r * Math.cos(rad)];
+    }
+    function el(tag, attrs) {
+      const e = document.createElementNS(NS, tag);
+      for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+      return e;
     }
 
-    // Breathing scale: oscillates 1.0 to 1.4 over 2 seconds
-    const breathe = 1.0 + 0.2 * (1 + Math.sin(performance.now() / 1000 * Math.PI));
+    // Minor ticks every 10° (skip cardinal positions)
+    for (let a = 0; a < 360; a += 10) {
+      if (skipAngles.has(a)) continue;
+      const [x1, y1] = pt(outerR,     a);
+      const [x2, y2] = pt(outerR - 4, a);
+      compassTicks.appendChild(el('line', {
+        x1: x1.toFixed(1), y1: y1.toFixed(1),
+        x2: x2.toFixed(1), y2: y2.toFixed(1),
+        stroke: 'var(--text-primary)', 'stroke-width': '1', opacity: '0.1',
+      }));
+    }
 
-    // Outer glow
-    const baseAlpha = 0.5;
-    const drawAlpha = Math.max(baseAlpha, dotPulseAlpha);
-    ctx.globalAlpha = drawAlpha * 0.3;
-    ctx.beginPath();
-    ctx.arc(aircraftDotX, aircraftDotY, 12 * breathe, 0, Math.PI * 2);
-    ctx.fillStyle = '#60a0ff';
-    ctx.fill();
+    // Major cardinal ticks + labels (N/E/S/W)
+    for (const [angle, label] of Object.entries(majorAngles)) {
+      const a = Number(angle);
+      const [x1, y1] = pt(outerR,     a);
+      const [x2, y2] = pt(outerR - 8, a);
+      compassTicks.appendChild(el('line', {
+        x1: x1.toFixed(1), y1: y1.toFixed(1),
+        x2: x2.toFixed(1), y2: y2.toFixed(1),
+        stroke: 'var(--text-primary)', 'stroke-width': '1.5',
+      }));
+      const [lx, ly] = pt(outerR - 30, a);
+      const t = el('text', {
+        x: lx.toFixed(1), y: ly.toFixed(1),
+        'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        'font-size': '24', 'font-family': '"JetBrains Mono", monospace',
+        'font-weight': '500', fill: 'var(--text-primary)',
+      });
+      t.textContent = label;
+      compassTicks.appendChild(t);
+    }
 
-    // Main dot (12px diameter = radius 6)
-    ctx.globalAlpha = drawAlpha;
-    ctx.beginPath();
-    ctx.arc(aircraftDotX, aircraftDotY, 6 * breathe, 0, Math.PI * 2);
-    ctx.fillStyle = '#60a0ff';
-    ctx.fill();
+    // Intermediate cardinal labels (NE/SE/SW/NW)
+    for (const [angle, label] of Object.entries(interAngles)) {
+      const a = Number(angle);
+      const [lx, ly] = pt(outerR - 30, a);
+      const t = el('text', {
+        x: lx.toFixed(1), y: ly.toFixed(1),
+        'text-anchor': 'middle', 'dominant-baseline': 'middle',
+        'font-size': '16', 'font-family': '"JetBrains Mono", monospace',
+        fill: 'var(--text-secondary)',
+      });
+      t.textContent = label;
+      compassTicks.appendChild(t);
+    }
+  }
 
-    // White inner core (4px diameter = radius 2)
-    ctx.globalAlpha = drawAlpha * 0.9;
-    ctx.beginPath();
-    ctx.arc(aircraftDotX, aircraftDotY, 2 * breathe, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
+  initCompass();
 
-    // Sweep pulse ring
-    if (dotPulseAlpha > baseAlpha + 0.1) {
-      ctx.globalAlpha = (dotPulseAlpha - baseAlpha) * 0.6;
+  function updateCompass(heading) {
+    if (heading == null) {
+      compassNeedle.style.opacity   = '0';
+      compassValue.textContent      = '—';
+      compassCardinal.textContent   = '';
+      return;
+    }
+    compassNeedle.style.opacity   = '1';
+    compassNeedle.style.transform = `rotate(${heading}deg)`;
+    compassValue.textContent      = `${Math.round(heading)}°`;
+    compassCardinal.textContent   = headingToCardinal(heading);
+  }
+
+  // ── Clock: 1s tick ─────────────────────────────────────────────────────────
+  function updateClock() {
+    const now = new Date();
+    const h = String(now.getHours()).padStart(2, '0');
+    const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
+    clockEl.textContent = `${h}:${m}:${s}`;
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // ── Featured panel ─────────────────────────────────────────────────────────
+  let currentAircraft      = null;
+  let currentLogoIcao      = null;
+  let displayedFeaturedIcao = null;
+  let crossfadeVersion      = 0;
+
+  function updateFeaturedContent(ac) {
+    currentAircraft = ac;
+    updateCompass(ac.heading ?? null);
+
+    // Logo
+    if (ac.airlineIcao && ac.airlineIcao !== currentLogoIcao) {
+      currentLogoIcao = ac.airlineIcao;
+      featLogo.classList.add('hidden');
+      featLogoFb.classList.add('hidden');
+      featLogo.onload = () => {
+        featLogo.classList.remove('hidden');
+        featLogoFb.classList.add('hidden');
+      };
+      featLogo.onerror = () => {
+        featLogo.classList.add('hidden');
+        featLogoFb.textContent = ac.airlineIcao;
+        featLogoFb.classList.remove('hidden');
+      };
+      featLogo.src = `api/logo/${ac.airlineIcao}`;
+    } else if (!ac.airlineIcao && currentLogoIcao !== null) {
+      currentLogoIcao = null;
+      featLogo.classList.add('hidden');
+      featLogoFb.textContent = ac.callsign ? ac.callsign.slice(0, 3) : '—';
+      featLogoFb.classList.remove('hidden');
+    }
+
+    featCallsign.textContent = ac.callsign || ac.icao24.toUpperCase();
+    featRoute.textContent    = '—';
+
+    // ALT with vertical rate indicator
+    const altText = ac.altitude != null
+      ? new Intl.NumberFormat('en-US').format(Math.round(ac.altitude))
+      : '—';
+    const vr = ac.verticalRate;
+    let vrHtml = '';
+    if (vr != null && vr > 100)       vrHtml = '<span class="vrate-ind vrate-up">▲</span>';
+    else if (vr != null && vr < -100) vrHtml = '<span class="vrate-ind vrate-down">▼</span>';
+    featAlt.innerHTML = vrHtml + altText;
+
+    featSpd.textContent  = ac.velocity   != null ? String(ac.velocity)       : '—';
+    featDist.textContent = ac.distanceMi != null ? ac.distanceMi.toFixed(1)  : '—';
+
+    if (ac.manufacturer && ac.model) {
+      const combined = (ac.manufacturer + ' ' + ac.model).replace(/\s+/g, ' ').trim();
+      featType.textContent = combined.length <= 24 ? combined : (ac.typecode || combined);
+    } else if (ac.typecode) {
+      featType.textContent = ac.typecode;
+    } else {
+      featType.textContent = '—';
+    }
+
+    updateCaption();
+  }
+
+  function renderFeatured(ac) {
+    if (!ac) {
+      featFlight.classList.add('hidden');
+      featEmpty.classList.remove('hidden');
+      displayedFeaturedIcao = null;
+      currentAircraft = null;
+      updateCompass(null);
+      return;
+    }
+
+    featEmpty.classList.add('hidden');
+
+    if (ac.icao24 === displayedFeaturedIcao) {
+      // Same aircraft — update values in place, no animation
+      updateFeaturedContent(ac);
+      return;
+    }
+
+    const version = ++crossfadeVersion;
+    displayedFeaturedIcao = ac.icao24;
+
+    const wasHidden = featFlight.classList.contains('hidden');
+    if (wasHidden) {
+      // Coming from empty state — populate then slide in
+      updateFeaturedContent(ac);
+      featFlight.style.transition = 'none';
+      featFlight.style.opacity    = '0';
+      featFlight.style.transform  = 'translateY(20px)';
+      featFlight.classList.remove('hidden');
+      featFlight.getBoundingClientRect(); // force reflow
+      featFlight.style.transition = '';
+      featFlight.style.opacity    = '1';
+      featFlight.style.transform  = 'translateY(0)';
+      return;
+    }
+
+    // Different aircraft — fade out, then swap content, then slide in
+    featFlight.style.opacity   = '0';
+    featFlight.style.transform = 'translateY(0)';
+
+    setTimeout(() => {
+      if (crossfadeVersion !== version) return; // superseded by a newer call
+      updateFeaturedContent(ac);
+      featFlight.style.transition = 'none';
+      featFlight.style.opacity    = '0';
+      featFlight.style.transform  = 'translateY(20px)';
+      featFlight.getBoundingClientRect();
+      featFlight.style.transition = '';
+      featFlight.style.opacity    = '1';
+      featFlight.style.transform  = 'translateY(0)';
+    }, 500); // 400ms fade-out + 100ms hold
+  }
+
+  function updateCaption() {
+    if (!currentAircraft) return;
+    const ac  = currentAircraft;
+    const id  = ac.registration || ac.callsign || ac.icao24.toUpperCase();
+    if (ac.lastSeen) {
+      const ago = Math.round(Date.now() / 1000 - ac.lastSeen);
+      featCaption.textContent = `Last seen ${ago}s ago · ${id}`;
+    } else {
+      featCaption.textContent = id;
+    }
+  }
+  setInterval(updateCaption, 1000);
+
+  // ── Radar: canvas setup ────────────────────────────────────────────────────
+  let radarLogicalSize = 0;
+
+  function setupRadarCanvas() {
+    const rect  = radarPanel.getBoundingClientRect();
+    const innerW = rect.width  - RADAR_PAD * 2;
+    const innerH = rect.height - RADAR_PAD * 2;
+    const size   = Math.floor(Math.min(innerW, innerH));
+    if (size <= 0) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    radarLogicalSize        = size;
+    radarCanvas.style.width  = size + 'px';
+    radarCanvas.style.height = size + 'px';
+    radarCanvas.width  = Math.round(size * dpr);
+    radarCanvas.height = Math.round(size * dpr);
+    drawRadar();
+  }
+
+  new ResizeObserver(setupRadarCanvas).observe(radarPanel);
+
+  // ── Radar: draw ────────────────────────────────────────────────────────────
+  function drawRadar() {
+    if (radarLogicalSize <= 0) return;
+    const dpr    = window.devicePixelRatio || 1;
+    const ctx    = radarCtx;
+    const s      = radarLogicalSize;
+    const cx     = s / 2;
+    const cy     = s / 2;
+    const outerR = s / 2;
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, s, s);
+
+    // 1. Backdrop
+    ctx.fillStyle = BG_PANEL_ALT;
+    ctx.fillRect(0, 0, s, s);
+
+    // 2. Range rings — 2.5 / 5 / 10 mi, dashed
+    const rings = [
+      { r: outerR * 0.25, label: '2.5 MI' },
+      { r: outerR * 0.5,  label: '5 MI'   },
+      { r: outerR,        label: '10 MI'  },
+    ];
+    ctx.strokeStyle = 'rgba(95, 211, 224, 0.15)';
+    ctx.lineWidth   = 1;
+    ctx.setLineDash([4, 6]);
+    for (const ring of rings) {
       ctx.beginPath();
-      ctx.arc(aircraftDotX, aircraftDotY, 16 + (1.0 - dotPulseAlpha) * 28, 0, Math.PI * 2);
-      ctx.strokeStyle = '#60a0ff';
-      ctx.lineWidth = 2;
+      ctx.arc(cx, cy, ring.r, 0, Math.PI * 2);
       ctx.stroke();
     }
+    ctx.setLineDash([]);
 
-    // Decay pulse
-    dotPulseAlpha *= 0.95;
-    if (dotPulseAlpha < baseAlpha) dotPulseAlpha = 0;
-  }
-
-  ctx.globalAlpha = 1;
-
-  // Advance sweep
-  radarAngle = (radarAngle + 1.8) % 360;
-  requestAnimationFrame(drawRadar);
-}
-
-drawRadar();
-
-// --- Entry animation ---
-function animateEntry() {
-  const items = [
-    els.callsign,
-    els.aircraftType,
-    els.route,
-    els.altitude,
-    els.vrateBadge,
-    els.speed,
-    els.distance,
-    els.lastSeen
-  ];
-
-  // Reset all to hidden
-  items.forEach(el => {
-    el.classList.add('anim-entry');
-    el.classList.remove('visible');
-  });
-
-  // Stagger reveal
-  items.forEach((el, i) => {
-    setTimeout(() => {
-      el.classList.add('visible');
-    }, i * 150);
-  });
-}
-
-// --- Clock ---
-function updateClock() {
-  const now = new Date();
-  const h = String(now.getHours()).padStart(2, '0');
-  const m = String(now.getMinutes()).padStart(2, '0');
-  const s = String(now.getSeconds()).padStart(2, '0');
-  els.clock.textContent = `${h}:${m}:${s}`;
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// --- Fetch flights ---
-let lastFetchTime = 0;
-
-async function fetchFlights() {
-  try {
-    const res = await fetch('/api/flights');
-    const data = await res.json();
-    flights = data.states || [];
-    lastFetchTime = Date.now();
-
-    els.liveDot.classList.remove('stale');
-    els.statusText.textContent = 'LIVE';
-
-    // If current index is beyond range, reset
-    if (currentIndex >= flights.length) {
-      currentIndex = 0;
+    // Ring distance labels — 11px mono, just above each ring at 12 o'clock
+    ctx.font         = '11px "JetBrains Mono", monospace';
+    ctx.fillStyle    = TEXT_DIM;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'bottom';
+    for (const ring of rings) {
+      ctx.fillText(ring.label, cx, cy - ring.r - 3);
     }
 
-    updateDisplay();
-  } catch (err) {
-    console.error('Fetch error:', err);
-    els.liveDot.classList.add('stale');
-    els.statusText.textContent = 'OFFLINE';
-  }
-}
+    // 3. Cardinal grid lines — N-S and E-W through center
+    ctx.strokeStyle = 'rgba(95, 211, 224, 0.08)';
+    ctx.lineWidth   = 1;
+    ctx.beginPath(); ctx.moveTo(cx, 0); ctx.lineTo(cx, s); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, cy); ctx.lineTo(s, cy); ctx.stroke();
 
-// Poll every 30 seconds, matching backend
-setInterval(fetchFlights, 30000);
-fetchFlights().then(() => { if (flights.length > 0) animateEntry(); });
+    // 4. Cardinal labels — 14px Inter medium, ~20px inside outer ring
+    ctx.font         = '500 14px "Inter", system-ui, sans-serif';
+    ctx.fillStyle    = TEXT_SECONDARY;
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    const lR = outerR - 20;
+    ctx.fillText('N', cx,      cy - lR);
+    ctx.fillText('S', cx,      cy + lR);
+    ctx.fillText('E', cx + lR, cy     );
+    ctx.fillText('W', cx - lR, cy     );
 
-// --- Stale check ---
-setInterval(() => {
-  if (Date.now() - lastFetchTime > 60000) {
-    els.liveDot.classList.add('stale');
-    els.statusText.textContent = 'STALE';
-  }
-}, 5000);
-
-// --- Display ---
-function updateDisplay() {
-  if (flights.length === 0) {
-    els.card.style.visibility = 'hidden';
-    els.noFlights.classList.remove('hidden');
-    aircraftDotX = null;
-    aircraftDotY = null;
-    els.aircraftCount.textContent = '0 aircraft';
-    els.pagerDots.innerHTML = '';
-    els.countdown.textContent = '';
-    els.headingReadout.textContent = '';
-    return;
-  }
-
-  els.card.style.visibility = 'visible';
-  els.noFlights.classList.add('hidden');
-
-  const f = flights[currentIndex];
-
-  // Update radar aircraft dot
-  calcAircraftDot(f.latitude, f.longitude);
-
-  // Callsign
-  els.callsign.textContent = f.callsign || f.icao24.toUpperCase();
-
-  // Aircraft type
-  const rawType = f.aircraftType || '';
-  els.aircraftType.textContent = typeNames[rawType] || rawType;
-
-  // Route lookup (non-blocking)
-  if (f.callsign) {
-    lookupRoute(f.callsign);
-    updateRouteDisplay(f.callsign);
-  } else {
-    els.route.textContent = '';
-  }
-
-  // Vertical rate badge
-  const vr = f.verticalRate;
-  if (vr === null || vr === undefined || Math.abs(vr) < 0.5) {
-    els.vrateBadge.textContent = 'LEVEL';
-    els.vrateBadge.className = 'level';
-  } else if (vr > 0) {
-    els.vrateBadge.textContent = `\u2191 ${Math.round(vr * 196.85)} ft/min`;
-    els.vrateBadge.className = 'climbing';
-  } else {
-    els.vrateBadge.textContent = `\u2193 ${Math.abs(Math.round(vr * 196.85))} ft/min`;
-    els.vrateBadge.className = 'descending';
-  }
-
-  // Altitude (meters to feet)
-  const altM = f.geoAltitude !== null ? f.geoAltitude : f.baroAltitude;
-  if (altM !== null && altM !== undefined) {
-    const altFt = Math.round(altM * 3.28084);
-    els.altitude.textContent = altFt.toLocaleString() + ' ft';
-  } else {
-    els.altitude.textContent = '--- ft';
-  }
-
-  // Speed (m/s to knots and mph)
-  if (f.velocity !== null && f.velocity !== undefined) {
-    const knots = Math.round(f.velocity * 1.94384);
-    const mph = Math.round(knots * 1.15078);
-    els.speed.textContent = knots + ' kts / ' + mph + ' mph';
-  } else {
-    els.speed.textContent = '--- kts / --- mph';
-  }
-
-  // Distance and direction from home
-  if (f.latitude != null && f.longitude != null) {
-    const dist = haversineDistance(HOME_LAT, HOME_LON, f.latitude, f.longitude);
-    const bearing = bearingFrom(HOME_LAT, HOME_LON, f.latitude, f.longitude);
-    els.distance.textContent = dist.toFixed(1) + ' mi ' + compassDirection(bearing);
-  } else {
-    els.distance.textContent = '';
-  }
-
-  // Last seen
-  if (f.lastSeen) {
-    const ago = Math.round(Date.now() / 1000 - f.lastSeen);
-    els.lastSeen.textContent = ago > 0 ? `seen ${ago}s ago` : 'just now';
-  } else {
-    els.lastSeen.textContent = '';
-  }
-
-  // Airline logo
-  const fallbackCode = (f.icaoPrefix && f.callsign && /^[A-Z]{3}/.test(f.callsign)) ? f.icaoPrefix : 'GA';
-
-  if (f.iataCode) {
-    const logoUrl = `https://www.gstatic.com/flights/airline_logos/70px/${f.iataCode}.png`;
-    // Only reassign src if URL changed — avoids re-triggering load/redirect cycle
-    if (els.airlineLogo.src !== logoUrl) {
-      els.airlineLogo.onerror = null;
-      els.airlineLogo.onload = null;
-      const expectedCallsign = f.callsign;
-      els.airlineLogo.onload = function () {
-        // Only apply if still showing the same flight
-        if (flights[currentIndex] && flights[currentIndex].callsign === expectedCallsign) {
-          this.classList.remove('hidden');
-          els.airlineCode.classList.add('hidden');
-        }
-      };
-      els.airlineLogo.onerror = function () {
-        if (flights[currentIndex] && flights[currentIndex].callsign === expectedCallsign) {
-          this.classList.add('hidden');
-          els.airlineCode.textContent = fallbackCode;
-          els.airlineCode.classList.remove('hidden');
-        }
-      };
-      els.airlineLogo.src = logoUrl;
+    // 4.5. Sweep wedge — 12° conic, rgba(95,211,224,0.04), rotates 360° per SWEEP_PERIOD
+    {
+      const sweepEndRad   = (sweepAngle - 90) * Math.PI / 180;
+      const sweepStartRad = sweepEndRad - 12 * Math.PI / 180;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, outerR, sweepStartRad, sweepEndRad, false);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(95,211,224,0.04)';
+      ctx.fill();
+      ctx.restore();
     }
-    // Show logo optimistically (it may already be cached by browser)
-    els.airlineLogo.classList.remove('hidden');
-    els.airlineCode.classList.add('hidden');
-  } else {
-    els.airlineLogo.onerror = null;
-    els.airlineLogo.onload = null;
-    els.airlineLogo.classList.add('hidden');
-    els.airlineCode.textContent = fallbackCode;
-    els.airlineCode.classList.remove('hidden');
-  }
 
-  // Compass
-  const newHeading = f.heading;
-  if (newHeading !== null && newHeading !== undefined) {
-    animateCompass(newHeading);
-    els.headingReadout.textContent = Math.round(newHeading) + '\u00B0 ' + compassDirection(newHeading);
-  } else {
-    drawCompass(0, false);
-    els.headingReadout.textContent = '---\u00B0';
-  }
+    // 5. Trails — fading polylines behind each aircraft
+    for (const ac of radarAircraft) {
+      const trail = trailMap.get(ac.icao24);
+      if (!trail || trail.length < 2) continue;
+      const isFeat  = ac.icao24 === radarFeaturedId;
+      const color   = isFeat ? 'rgba(255,179,71,0.8)' : 'rgba(95,211,224,0.8)';
+      ctx.lineWidth = 1.5;
+      ctx.lineCap   = 'round';
+      for (let i = 1; i < trail.length; i++) {
+        const prev    = project(trail[i - 1].lat, trail[i - 1].lon, s);
+        const curr    = project(trail[i].lat,     trail[i].lon,     s);
+        const progress      = i / (trail.length - 1);  // 0→1 oldest→newest
+        ctx.globalAlpha     = 0.05 + (0.4 - 0.05) * progress;
+        ctx.strokeStyle     = color;
+        ctx.beginPath();
+        ctx.moveTo(prev.x, prev.y);
+        ctx.lineTo(curr.x, curr.y);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
 
-  // Aircraft count
-  els.aircraftCount.textContent = flights.length + ' aircraft';
+    // Aircraft icons: non-featured first, featured on top
+    const others   = radarAircraft.filter(a => a.icao24 !== radarFeaturedId);
+    const featured = radarAircraft.find(a => a.icao24 === radarFeaturedId) || null;
 
-  // Pager dots
-  els.pagerDots.innerHTML = '';
-  const maxDots = Math.min(flights.length, 40);
-  for (let i = 0; i < maxDots; i++) {
-    const dot = document.createElement('div');
-    dot.className = 'dot' + (i === currentIndex ? ' active' : '');
-    els.pagerDots.appendChild(dot);
-  }
-}
+    for (const ac of others)          drawAircraftIcon(ctx, ac, false, s);
+    if (featured)                      drawAircraftIcon(ctx, featured, true, s);
 
-// --- Compass ---
-function drawCompass(heading, showNeedle = true) {
-  const canvas = els.compass;
-  const ctx = canvas.getContext('2d');
-  const cx = canvas.width / 2;
-  const cy = canvas.height / 2;
-  const r = 138;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Outer ring
-  ctx.beginPath();
-  ctx.arc(cx, cy, r, 0, Math.PI * 2);
-  ctx.strokeStyle = '#334';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Tick marks
-  for (let deg = 0; deg < 360; deg += 10) {
-    const rad = (deg - 90) * Math.PI / 180;
-    const inner = deg % 30 === 0 ? r - 12 : r - 6;
+    // 7. Arvada marker — drawn last, always on top
+    const triSide = 14;
+    const triH    = triSide * Math.sqrt(3) / 2;
+    ctx.fillStyle = ACCENT_AMBER;
     ctx.beginPath();
-    ctx.moveTo(cx + Math.cos(rad) * inner, cy + Math.sin(rad) * inner);
-    ctx.lineTo(cx + Math.cos(rad) * r, cy + Math.sin(rad) * r);
-    ctx.strokeStyle = '#556';
-    ctx.lineWidth = deg % 30 === 0 ? 2 : 1;
-    ctx.stroke();
-  }
-
-  // Cardinal labels
-  const labels = [
-    { text: 'N', deg: 0, color: '#ff4444' },
-    { text: 'E', deg: 90, color: '#c0c0d0' },
-    { text: 'S', deg: 180, color: '#c0c0d0' },
-    { text: 'W', deg: 270, color: '#c0c0d0' }
-  ];
-
-  ctx.font = 'bold 16px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-
-  for (const l of labels) {
-    const rad = (l.deg - 90) * Math.PI / 180;
-    const lr = r - 24;
-    ctx.fillStyle = l.color;
-    ctx.fillText(l.text, cx + Math.cos(rad) * lr, cy + Math.sin(rad) * lr);
-  }
-
-  // Needle
-  if (showNeedle) {
-    const rad = (heading - 90) * Math.PI / 180;
-    const needleLen = r - 32;
-
-    // Needle body
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + Math.cos(rad) * needleLen, cy + Math.sin(rad) * needleLen);
-    ctx.strokeStyle = '#4488ff';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // Needle tip
-    ctx.beginPath();
-    ctx.arc(cx + Math.cos(rad) * needleLen, cy + Math.sin(rad) * needleLen, 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#4488ff';
+    ctx.moveTo(cx,               cy - (triH * 2 / 3));
+    ctx.lineTo(cx + triSide / 2, cy + triH / 3);
+    ctx.lineTo(cx - triSide / 2, cy + triH / 3);
+    ctx.closePath();
     ctx.fill();
 
-    // Center dot
-    ctx.beginPath();
-    ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#6699ff';
-    ctx.fill();
+    ctx.font          = '11px "JetBrains Mono", monospace';
+    ctx.fillStyle     = ACCENT_AMBER;
+    ctx.textAlign     = 'center';
+    ctx.textBaseline  = 'top';
+    ctx.letterSpacing = '0.2em';
+    ctx.fillText('ARVADA', cx, cy + triH / 3 + 5);
+    ctx.letterSpacing = '0px';
+
+    // No-flights overlay
+    if (radarAircraft.length === 0) {
+      ctx.font         = '500 24px "Inter", system-ui, sans-serif';
+      ctx.fillStyle    = TEXT_SECONDARY;
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Skies clear over Arvada', cx, cy + 40);
+    }
+
+    ctx.restore();
   }
-}
 
-function animateCompass(targetHeading) {
-  if (animationFrame) {
-    cancelAnimationFrame(animationFrame);
-  }
+  function drawAircraftIcon(ctx, ac, isFeatured, s) {
+    if (ac.distanceMi > RANGE_MI) return;
+    if (ac.lat == null || ac.lon == null) return;
 
-  if (animatingHeading === null) {
-    animatingHeading = targetHeading;
-    drawCompass(targetHeading);
-    return;
-  }
+    const pos     = project(ac.lat, ac.lon, s);
+    const scale   = isFeatured ? 1.4 : 1.0;
+    const icon    = isFeatured ? iconAmber : iconCyan;
+    const heading = ac.heading != null ? ac.heading : 0;
+    const headRad = heading * Math.PI / 180;
 
-  const start = animatingHeading;
-  let diff = targetHeading - start;
+    // Draw rotated icon
+    ctx.save();
+    ctx.translate(pos.x, pos.y);
+    ctx.rotate(headRad);
+    ctx.scale(scale, scale);
+    ctx.drawImage(icon, -ICON_SIZE / 2, -ICON_SIZE / 2);
+    ctx.restore();
 
-  // Shortest path
-  if (diff > 180) diff -= 360;
-  if (diff < -180) diff += 360;
-
-  const duration = 800;
-  const startTime = performance.now();
-
-  function step(now) {
-    const elapsed = now - startTime;
-    const t = Math.min(elapsed / duration, 1);
-    // Ease out cubic
-    const eased = 1 - Math.pow(1 - t, 3);
-    const current = start + diff * eased;
-    drawCompass(current);
-
-    if (t < 1) {
-      animationFrame = requestAnimationFrame(step);
+    // Callsign label: 8px below the tail edge after display scaling
+    const labelY      = pos.y + ICON_TAIL_OFFSET * scale + 8;
+    const label       = ac.callsign || ac.icao24.toUpperCase();
+    ctx.textAlign     = 'center';
+    ctx.textBaseline  = 'top';
+    if (isFeatured) {
+      ctx.font      = '500 14px "JetBrains Mono", monospace';
+      ctx.fillStyle = ACCENT_AMBER;
     } else {
-      animatingHeading = targetHeading;
-      animationFrame = null;
+      ctx.font      = '10px "JetBrains Mono", monospace';
+      ctx.fillStyle = TEXT_DIM;
+    }
+    ctx.fillText(label, pos.x, labelY);
+  }
+
+  // ── Ticker ────────────────────────────────────────────────────────────────
+  let currentNotableIcao = null;
+  let tickerDismissTimer = null;
+  const DISMISS_DELAY    = 30000;
+
+  function findNotable(aircraft, featuredIcao) {
+    if (!aircraft || aircraft.length === 0) return null;
+    const featured = aircraft.find(a => a.icao24 === featuredIcao);
+    if (featured && featured.notable) return featured;
+    return aircraft.find(a => a.notable) || null;
+  }
+
+  function formatTickerContent(ac) {
+    const id     = ac.registration || ac.callsign || ac.icao24.toUpperCase();
+    const type   = ac.model || ac.typecode || '—';
+    const reason = ac.notableReason || '—';
+    const alt    = ac.altitude != null
+      ? new Intl.NumberFormat('en-US').format(Math.round(ac.altitude)) + ' ft' : '—';
+    const dist   = ac.distanceMi != null ? ac.distanceMi.toFixed(1) + ' mi' : '—';
+    const dir    = ac.bearing   != null ? headingToCardinal(ac.bearing) : '';
+    return `<span class="ticker-flag">⚑</span>${id} · ${type} · ${reason} · ${alt} · ${dist} ${dir}`.trimEnd();
+  }
+
+  function setTickerContent(ac) {
+    tickerEl.innerHTML = formatTickerContent(ac);
+  }
+
+  function animateTickerIn() {
+    tickerEl.style.transition = 'none';
+    tickerEl.style.opacity    = '0';
+    tickerEl.style.transform  = 'translateY(20px)';
+    tickerEl.getBoundingClientRect(); // force reflow
+    tickerEl.style.transition = 'opacity 200ms ease, transform 200ms ease';
+    tickerEl.style.opacity    = '1';
+    tickerEl.style.transform  = 'translateY(0)';
+  }
+
+  function showTicker(ac) {
+    currentNotableIcao = ac.icao24;
+    setTickerContent(ac);
+    dashboardEl.classList.add('ticker-active');
+    setTimeout(animateTickerIn, 80); // let grid row start expanding first
+  }
+
+  function crossfadeTicker(ac) {
+    tickerEl.style.transition = 'opacity 200ms ease, transform 200ms ease';
+    tickerEl.style.opacity    = '0';
+    tickerEl.style.transform  = 'translateY(-10px)';
+    setTimeout(() => {
+      currentNotableIcao        = ac.icao24;
+      setTickerContent(ac);
+      tickerEl.style.transition = 'none';
+      tickerEl.style.transform  = 'translateY(20px)';
+      tickerEl.getBoundingClientRect();
+      tickerEl.style.transition = 'opacity 200ms ease, transform 200ms ease';
+      tickerEl.style.opacity    = '1';
+      tickerEl.style.transform  = 'translateY(0)';
+    }, 200);
+  }
+
+  function hideTicker() {
+    tickerEl.style.transition = 'opacity 200ms ease';
+    tickerEl.style.opacity    = '0';
+    setTimeout(() => {
+      dashboardEl.classList.remove('ticker-active');
+      currentNotableIcao   = null;
+      tickerEl.innerHTML   = '';
+      tickerEl.style.cssText = '';
+    }, 200);
+  }
+
+  function updateTicker(aircraft, featuredIcao) {
+    const notable  = findNotable(aircraft, featuredIcao);
+    const isActive = dashboardEl.classList.contains('ticker-active');
+
+    if (!notable) {
+      // Notable left range — start dismiss timer if not already counting down
+      if (isActive && !tickerDismissTimer) {
+        tickerDismissTimer = setTimeout(() => {
+          tickerDismissTimer = null;
+          hideTicker();
+        }, DISMISS_DELAY);
+      }
+      return;
+    }
+
+    // Notable present — cancel any pending dismiss
+    if (tickerDismissTimer) {
+      clearTimeout(tickerDismissTimer);
+      tickerDismissTimer = null;
+    }
+
+    if (!isActive) {
+      showTicker(notable);
+    } else if (notable.icao24 !== currentNotableIcao) {
+      crossfadeTicker(notable);
+    } else {
+      setTickerContent(notable); // same aircraft, refresh values
     }
   }
 
-  animationFrame = requestAnimationFrame(step);
-}
+  // ── Stats fetch ────────────────────────────────────────────────────────────
+  function fetchStats() {
+    fetch('api/stats')
+      .then(res => res.json())
+      .then(d => {
+        statCount.textContent      = d.uniqueAircraftCount > 0 ? d.uniqueAircraftCount : '—';
 
-// --- Cycling ---
-function cycleNext() {
-  if (flights.length === 0) return;
-  currentIndex = (currentIndex + 1) % flights.length;
-  countdownSeconds = 12;
-  updateDisplay();
-  animateEntry();
-}
+        statHighest.textContent    = d.highestAltitude.feet !== '—'
+          ? `${d.highestAltitude.feet} ft` : '—';
+        statHighestSub.textContent = d.highestAltitude.callsign !== '—'
+          ? d.highestAltitude.callsign : '';
 
-setInterval(() => {
-  countdownSeconds--;
-  if (countdownSeconds <= 0) {
-    cycleNext();
+        statClosest.textContent    = d.closestApproach.miles !== '—'
+          ? `${d.closestApproach.miles} mi` : '—';
+        statClosestSub.textContent = d.closestApproach.callsign !== '—'
+          ? d.closestApproach.callsign : '';
+
+        statBusiest.textContent    = d.busiestHour.count > 0
+          ? `${d.busiestHour.hour} (${d.busiestHour.count})` : '—';
+
+        statAirline.textContent    = d.topAirline.icao !== '—' ? d.topAirline.icao : '—';
+        statAirlineSub.textContent = d.topAirline.name !== '—' ? d.topAirline.name : '';
+      })
+      .catch(err => console.error('[flightboard] stats fetch error:', err));
   }
-  els.countdown.textContent = flights.length > 0 ? `next ${countdownSeconds}s` : '';
-}, 1000);
 
-// --- Last seen updater ---
-setInterval(() => {
-  if (flights.length > 0) {
-    const f = flights[currentIndex];
-    if (f && f.lastSeen) {
-      const ago = Math.round(Date.now() / 1000 - f.lastSeen);
-      els.lastSeen.textContent = ago > 0 ? `seen ${ago}s ago` : 'just now';
+  // ── Radar: continuous rAF loop ────────────────────────────────────────────
+  let lastFrameTime = null;
+  (function radarLoop(timestamp) {
+    if (lastFrameTime !== null) {
+      const dt = timestamp - lastFrameTime;
+      sweepAngle = (sweepAngle + 360 * dt / SWEEP_PERIOD) % 360;
     }
-  }
-}, 1000);
+    lastFrameTime = timestamp;
+    drawRadar();
+    requestAnimationFrame(radarLoop);
+  }(performance.now()));
 
-// Draw initial compass
-drawCompass(0, false);
+  // ── API polling: 5s ────────────────────────────────────────────────────────
+  let lastSuccessTime = Date.now();
+
+  function poll() {
+    fetch('api/aircraft')
+      .then(res => res.json())
+      .then(data => {
+        lastSuccessTime = Date.now();
+        console.log(`[${new Date().toISOString()}]`, data);
+
+        const n = data.count ?? (data.aircraft ? data.aircraft.length : 0);
+        countEl.textContent = `${n} aircraft in range`;
+
+        radarAircraft   = data.aircraft || [];
+        radarFeaturedId = data.featured || null;
+
+        // Update trail history
+        const seen = new Set();
+        for (const ac of radarAircraft) {
+          if (ac.lat == null || ac.lon == null) continue;
+          seen.add(ac.icao24);
+          const trail = trailMap.get(ac.icao24) || [];
+          trail.push({ lat: ac.lat, lon: ac.lon, timestamp: Date.now() });
+          if (trail.length > 5) trail.shift();
+          trailMap.set(ac.icao24, trail);
+        }
+        // Evict aircraft that left range
+        for (const id of trailMap.keys()) {
+          if (!seen.has(id)) trailMap.delete(id);
+        }
+
+        const featuredAc = data.featured
+          ? data.aircraft.find(a => a.icao24 === data.featured)
+          : (data.aircraft && data.aircraft.length > 0 ? data.aircraft[0] : null);
+        renderFeatured(featuredAc || null);
+        updateTicker(data.aircraft || [], data.featured || null);
+
+        fetchStats();
+      })
+      .catch(err => {
+        console.error('[flightboard] fetch error:', err);
+        // After 30s of no successful response, clear to no-flights state
+        if (Date.now() - lastSuccessTime > 30000) {
+          radarAircraft   = [];
+          radarFeaturedId = null;
+          renderFeatured(null);
+          updateTicker([], null);
+        }
+      });
+  }
+
+  poll();
+  setInterval(poll, 5000);
+});
