@@ -64,8 +64,48 @@ function parseCSVLine(line) {
 
 loadAircraftDb();
 
-// --- ICAO to IATA airline map (loaded from OpenFlights) ---
-let icaoIataMap = {};
+// --- Notable flight rules ---
+const { loadNotableRules, getNotableFlightInfo } = require('./notable');
+const notableSeen = new Set();
+
+try {
+  loadNotableRules();
+  console.log('Loaded notable flight rules from data/notable-rules.json');
+} catch (err) {
+  console.error(err.message);
+}
+
+// --- ICAO to airline lookup (loaded from OpenFlights) ---
+let airlineMap = {};
+
+function metersToFeet(meters) {
+  return typeof meters === 'number' ? Math.round(meters * 3.28084) : null;
+}
+
+function metersPerSecondToKnots(ms) {
+  return typeof ms === 'number' ? Math.round(ms * 1.94384) : null;
+}
+
+function metersPerSecondToFpm(ms) {
+  return typeof ms === 'number' ? Math.round(ms * 196.8504) : null;
+}
+
+function haversineDistanceMi(lat1, lon1, lat2, lon2) {
+  if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return Infinity;
+  const R = 3958.8; // miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function bearingFromHome(lat, lon) {
+  if (lat == null || lon == null) return null;
+  const y = Math.sin((lon - HOME_LON) * Math.PI / 180) * Math.cos(lat * Math.PI / 180);
+  const x = Math.cos(HOME_LAT * Math.PI / 180) * Math.sin(lat * Math.PI / 180) -
+            Math.sin(HOME_LAT * Math.PI / 180) * Math.cos(lat * Math.PI / 180) * Math.cos((lon - HOME_LON) * Math.PI / 180);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
 
 async function loadAirlineMap() {
   const OPENFLIGHTS_URL = 'https://raw.githubusercontent.com/jpatokal/openflights/master/data/airlines.dat';
@@ -77,23 +117,25 @@ async function loadAirlineMap() {
     for (const line of text.split('\n')) {
       // Format: id, name, alias, IATA, ICAO, callsign, country, active
       const cols = line.split(',').map(c => c.replace(/^"|"$/g, '').trim());
-      const iata = cols[3];
+      const name = cols[1] || null;
+      const rawIata = cols[3];
+      const iata = rawIata && rawIata.length === 2 && rawIata !== '\\N' && rawIata !== '-' ? rawIata : null;
       const icao = cols[4];
-      if (icao && icao.length === 3 && icao !== '\\N' && icao !== '-' &&
-          iata && iata.length === 2 && iata !== '\\N' && iata !== '-') {
-        map[icao] = iata;
+      if (icao && icao.length === 3 && icao !== '\\N' && icao !== '-') {
+        map[icao] = { iata, name };
       }
     }
-    icaoIataMap = map;
-    console.log(`Loaded ${Object.keys(icaoIataMap).length} airline ICAO->IATA mappings from OpenFlights`);
+    airlineMap = map;
+    console.log(`Loaded ${Object.keys(airlineMap).length} airline ICAO mappings from OpenFlights`);
   } catch (err) {
     console.error('Failed to load OpenFlights airline data:', err.message);
     // Fall back to local file if available
     try {
-      icaoIataMap = JSON.parse(
+      const localMap = JSON.parse(
         fs.readFileSync(path.join(__dirname, 'data', 'icao-iata-map.json'), 'utf8')
       );
-      console.log(`Fell back to local airline map (${Object.keys(icaoIataMap).length} entries)`);
+      airlineMap = Object.fromEntries(Object.entries(localMap).map(([icao, iata]) => [icao, { iata, name: null }]));
+      console.log(`Fell back to local airline map (${Object.keys(airlineMap).length} entries)`);
     } catch (e) {
       console.error('No local airline map available either');
     }
@@ -112,16 +154,20 @@ const CLIENT_SECRET = process.env.OPENSKY_CLIENT_SECRET;
 const TOKEN_URL = 'https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token';
 const API_URL = 'https://opensky-network.org/api/states/all';
 
-// Bounding box: ~13nm around Arvada, CO (39.8028, -105.0875)
-const BBOX = {
-  lamin: 39.591,
-  lamax: 40.014,
-  lomin: -105.326,
-  lomax: -104.826
-};
-
+// Bounding box: 12 mi buffer around Arvada (10 mi display range + headroom)
 const HOME_LAT = 39.8028;
 const HOME_LON = -105.0875;
+const BUFFER_MI = 12;
+const LAT_BUFFER = BUFFER_MI / 69;                                      // ~0.174
+const LON_BUFFER = BUFFER_MI / (69 * Math.cos(HOME_LAT * Math.PI / 180)); // ~0.226
+
+const BBOX = {
+  lamin: HOME_LAT - LAT_BUFFER,
+  lamax: HOME_LAT + LAT_BUFFER,
+  lomin: HOME_LON - LON_BUFFER,
+  lomax: HOME_LON + LON_BUFFER
+};
+
 const MAX_FLIGHTS = 10;
 
 let accessToken = null;
@@ -193,15 +239,18 @@ async function pollOpenSky() {
         const icao24 = (s[0] || '').toLowerCase();
         const callsign = (s[1] || '').trim();
         const icaoPrefix = callsign.replace(/[0-9]/g, '').substring(0, 3);
-        const iataCode = ICAO_IATA_OVERRIDES[icaoPrefix] || icaoIataMap[icaoPrefix] || null;
+        const airline = airlineMap[icaoPrefix];
+        const iataCode = ICAO_IATA_OVERRIDES[icaoPrefix] || airline?.iata || null;
         const aircraft = aircraftDb.get(icao24);
 
         return {
           icao24,
           callsign,
           icaoPrefix,
-          iataCode,
-          country: s[2],
+          airlineIcao: icaoPrefix,
+          airlineIata: iataCode,
+          airlineName: airline?.name || null,
+          origin_country: s[2],
           longitude: s[5],
           latitude: s[6],
           baroAltitude: s[7],
@@ -211,8 +260,10 @@ async function pollOpenSky() {
           verticalRate: s[11],
           geoAltitude: s[13],
           lastSeen: s[4],
-          aircraftType: aircraft ? (aircraft.typecode || aircraft.model || '') : '',
-          registration: aircraft ? aircraft.registration : ''
+          registration: aircraft ? aircraft.registration : null,
+          manufacturer: aircraft ? aircraft.manufacturer : null,
+          model: aircraft ? aircraft.model : null,
+          typecode: aircraft ? aircraft.typecode : null
         };
       }).filter(s => !s.onGround);
 
@@ -243,8 +294,161 @@ loadAirlineMap().then(() => {
   setInterval(pollOpenSky, 30000);
 });
 
+// --- Logo cache setup ---
+const logoDir = path.join(__dirname, 'public', 'assets', 'logos');
+
+async function ensureLogoDir() {
+  try {
+    await fs.promises.mkdir(logoDir, { recursive: true });
+  } catch (err) {
+    console.error('Could not create logo directory:', err.message);
+  }
+}
+
+function logoFilePath(icao) {
+  return path.join(logoDir, `${icao}.png`);
+}
+
+function missingFilePath(icao) {
+  return path.join(logoDir, `${icao}.missing`);
+}
+
+async function fileExists(filePath) {
+  try {
+    await fs.promises.access(filePath, fs.constants.R_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // --- Express routes ---
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/api/logo/:icao', async (req, res) => {
+  const icao = String(req.params.icao || '').toUpperCase();
+  if (!icao) {
+    return res.status(400).send('ICAO required');
+  }
+
+  const pngPath = logoFilePath(icao);
+  const sentinelPath = missingFilePath(icao);
+
+  if (await fileExists(sentinelPath)) {
+    return res.status(404).send('Logo not found');
+  }
+
+  if (await fileExists(pngPath)) {
+    res.type('image/png');
+    return fs.createReadStream(pngPath).pipe(res);
+  }
+
+  await ensureLogoDir();
+  const logoUrl = `https://raw.githubusercontent.com/sexym0nk3y/airline-logos/main/logos/${icao}.png`;
+  const fetchHeaders = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    'Accept': 'image/png,image/*;q=0.8,*/*;q=0.5',
+    'Referer': 'https://github.com/',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Connection': 'keep-alive'
+  };
+
+  let logoRes;
+  try {
+    logoRes = await fetch(logoUrl, { headers: fetchHeaders });
+  } catch (err) {
+    console.error(`Logo fetch failed for ${icao}:`, err.message);
+    return res.status(502).send('Logo fetch failed');
+  }
+
+  if (!logoRes.ok) {
+    const text = await logoRes.text().catch(() => 'Unknown logo fetch error');
+    console.error(`Logo fetch for ${icao} returned ${logoRes.status} ${logoRes.statusText} from ${logoUrl}`);
+    console.error('Response text:', text.slice(0, 200));
+    if (logoRes.status === 404) {
+      try {
+        await fs.promises.writeFile(sentinelPath, '');
+      } catch (err) {
+        console.error(`Failed to write missing sentinel for ${icao}:`, err.message);
+      }
+      return res.status(404).send('Logo not found');
+    }
+    return res.status(logoRes.status).send(text);
+  }
+
+  const buffer = Buffer.from(await logoRes.arrayBuffer());
+  try {
+    await fs.promises.writeFile(pngPath, buffer);
+  } catch (err) {
+    console.error(`Failed to cache logo ${icao}:`, err.message);
+  }
+
+  res.type('image/png');
+  res.send(buffer);
+});
+
+app.get('/api/aircraft', (req, res) => {
+  const now = Math.floor(Date.now() / 1000);
+  const aircraft = flightData.states
+    .map(s => {
+      const distanceMi = haversineDistanceMi(HOME_LAT, HOME_LON, s.latitude, s.longitude);
+      if (distanceMi > 10) return null;
+      const altitudeFt = metersToFeet(s.baroAltitude != null ? s.baroAltitude : s.geoAltitude);
+      const verticalRateFpm = metersPerSecondToFpm(s.verticalRate);
+      const notableInfo = getNotableFlightInfo({
+        typecode: s.typecode,
+        registration: s.registration,
+        altitude: altitudeFt,
+        verticalRate: verticalRateFpm
+      });
+
+      if (notableInfo.notable && !notableSeen.has(s.icao24)) {
+        notableSeen.add(s.icao24);
+        console.log(`Notable: ${s.callsign || 'unknown'} (${s.icao24}) - ${notableInfo.notableReason}`);
+      }
+
+      return {
+        icao24: s.icao24,
+        callsign: s.callsign || null,
+        lat: s.latitude,
+        lon: s.longitude,
+        altitude: altitudeFt,
+        velocity: metersPerSecondToKnots(s.velocity),
+        heading: typeof s.heading === 'number' ? Number(s.heading.toFixed(1)) : null,
+        verticalRate: verticalRateFpm,
+        onGround: s.onGround,
+        distanceMi: Number(distanceMi.toFixed(1)),
+        bearing: Number(bearingFromHome(s.latitude, s.longitude).toFixed(1)),
+        origin_country: s.origin_country,
+        registration: s.registration || null,
+        manufacturer: s.manufacturer || null,
+        model: s.model || null,
+        typecode: s.typecode || null,
+        airlineIcao: s.airlineIcao || null,
+        airlineIata: s.airlineIata || null,
+        airlineName: s.airlineName || null,
+        notable: notableInfo.notable,
+        notableReason: notableInfo.notableReason
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.distanceMi - b.distanceMi)
+    .slice(0, MAX_FLIGHTS);
+
+  res.json({
+    location: { lat: HOME_LAT, lon: HOME_LON, name: 'Arvada CO' },
+    rangeMiles: 10,
+    count: aircraft.length,
+    timestamp: now,
+    featured: aircraft.length > 0 ? aircraft[0].icao24 : null,
+    aircraft
+  });
+});
+
+// DEPRECATED: kept for bar-screen compatibility, safe to remove once no clients call it.
+app.get('/api/flight', (req, res) => {
+  res.json(flightData);
+});
 
 app.get('/api/flights', (req, res) => {
   res.json(flightData);

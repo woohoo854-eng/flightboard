@@ -1,3 +1,7 @@
 node_modules/
 .env
-data/
+data/*
+!data/notable-rules.json
+public/assets/
+server.log
+test-swa.png

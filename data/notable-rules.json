@@ -1,0 +1,14 @@
+{
+  "typeCodePrefixes": {
+    "widebody": ["B74", "B77", "B78", "A35", "A38", "A33", "A34"],
+    "privateJet": ["GL", "G5", "G6", "CL", "C68", "C75", "F2T", "F7X", "F8X", "LJ", "E50", "E55"],
+    "cargo": ["B74F", "B74D", "AN12", "AN22", "AN24", "C5", "C17"]
+  },
+  "specialRegistrations": {
+    "N747BA": "Boeing Dreamlifter",
+    "N905NA": "NASA Shuttle Carrier",
+    "N911NA": "NASA Shuttle Carrier"
+  },
+  "altitudeThresholdFt": 40000,
+  "verticalRateThresholdFpm": 3000
+}
